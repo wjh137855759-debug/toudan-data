@@ -381,31 +381,65 @@ function closeM(){document.getElementById('modalContainer').innerHTML='';}
 
 /* ===== DASHBOARD ===== */
 function rDash(c){
-    const recs=D.records.map(calc),tot=agg(recs),mon=getM(),lm=mon[mon.length-1],pm=mon[mon.length-2];
+    const ms=[...new Set(D.records.map(r=>r.month))].sort();
+    if(typeof D.dashMonth==='undefined')D.dashMonth='';
     function cp(a,b){return b&&b!==0?+(((a-b)/b)*100).toFixed(1):0;}
-    c.innerHTML='<div class="page-hd"><h1>数据总览</h1><p>查看所有投放数据的核心指标和趋势</p></div>'+
-    '<div class="kpi-grid">'+
-    kpi('blue','总投放消耗','&yen;'+(tot.adSpend/10000).toFixed(2)+'万',cp(lm?.adSpend,pm?.adSpend),'投放消耗')+
-    kpi('green','总成交台数',tot.dealCount+'台',cp(lm?.dealCount,pm?.dealCount),'成交台数')+
-    kpi('orange','平均成交成本','&yen;'+tot.dc,cp(lm?.dc,pm?.dc),'成交成本',true)+
-    kpi('cyan','微信添加率',(tot.war*100).toFixed(1)+'%',cp(lm?.war,pm?.war),'添加率')+
-    kpi('red','上门成交率',(tot.vdr*100).toFixed(1)+'%',cp(lm?.vdr,pm?.vdr),'成交率')+
-    kpi('blue','总私信转化',tot.privateMsg+'人',cp(lm?.privateMsg,pm?.privateMsg),'私信')+
-    '</div>'+
+    function doRender(){
+        const sel=D.dashMonth;
+        const allRecs=D.records.map(calc);
+        const recs=sel?allRecs.filter(r=>r.month===sel):allRecs;
+        const tot=agg(recs);
+        const mon=getM();
+        const lm=mon[mon.length-1],pm=mon[mon.length-2];
+        let kpiTot=tot,kpiPrev=null,useBoth=false;
+        if(sel){
+            const fltMon=getM().filter(m=>m.month===sel);
+            if(fltMon.length>0)kpiTot=fltMon[0];
+            const prevMon=getM().filter(m=>m.month<sel).slice(-1);
+            if(prevMon.length>0){kpiPrev=prevMon[0];useBoth=true;}
+        }else{useBoth=true;}
+        let kpiHtml;
+        if(useBoth){
+            kpiHtml=kpi('blue','投放消耗','&yen;'+(kpiTot.adSpend/10000).toFixed(2)+'万',cp(kpiTot.adSpend,kpiPrev?kpiPrev.adSpend:pm?.adSpend),'投放消耗')+
+            kpi('green','成交台数',kpiTot.dealCount+'台',cp(kpiTot.dealCount,kpiPrev?kpiPrev.dealCount:pm?.dealCount),'成交台数')+
+            kpi('orange','成交成本','&yen;'+kpiTot.dc,cp(kpiTot.dc,kpiPrev?kpiPrev.dc:pm?.dc),'成交成本',true)+
+            kpi('cyan','微信添加率',(kpiTot.war*100).toFixed(1)+'%',cp(kpiTot.war,kpiPrev?kpiPrev.war:pm?.war),'添加率')+
+            kpi('red','上门成交率',(kpiTot.vdr*100).toFixed(1)+'%',cp(kpiTot.vdr,kpiPrev?kpiPrev.vdr:pm?.vdr),'成交率')+
+            kpi('blue','私信转化',kpiTot.privateMsg+'人',cp(kpiTot.privateMsg,kpiPrev?kpiPrev.privateMsg:pm?.privateMsg),'私信');
+        }else{
+            kpiHtml=kpi('blue','投放消耗','&yen;'+(kpiTot.adSpend/10000).toFixed(2)+'万',0,'投放消耗')+
+            kpi('green','成交台数',kpiTot.dealCount+'台',0,'成交台数')+
+            kpi('orange','成交成本','&yen;'+kpiTot.dc,0,'成交成本',true)+
+            kpi('cyan','微信添加率',(kpiTot.war*100).toFixed(1)+'%',0,'添加率')+
+            kpi('red','上门成交率',(kpiTot.vdr*100).toFixed(1)+'%',0,'成交率')+
+            kpi('blue','私信转化',kpiTot.privateMsg+'人',0,'私信');
+        }
+        let tableMon=sel?mon.filter(m=>m.month===sel):mon;
+        let tableTot=sel?kpiTot:tot;
+        let tableTotLabel=sel?'合计':'总计';
+        document.getElementById('dashKpi').innerHTML=kpiHtml;
+        document.getElementById('dashSub').textContent=sel?fm(sel)+'的核心指标':'所有月份的核心指标';
+        document.getElementById('dashTbody').innerHTML=tableMon.map(m=>'<tr><td><strong>'+fm(m.month)+'</strong></td><td>&yen;'+m.adSpend.toLocaleString()+'</td><td>'+m.privateMsg+'</td><td>'+m.wechatAdd+'</td><td>'+m.pushOrder+'</td><td>'+m.visitSuccess+'</td><td><span class="tag tag-green">'+m.dealCount+'</span></td><td>'+(m.war*100).toFixed(1)+'%</td><td>'+(m.vdr*100).toFixed(1)+'%</td><td>&yen;'+m.dc+'</td></tr>').join('')+
+        tRow('<td>'+tableTotLabel+'</td><td>&yen;'+tableTot.adSpend.toLocaleString()+'</td><td>'+tableTot.privateMsg+'</td><td>'+tableTot.wechatAdd+'</td><td>'+tableTot.pushOrder+'</td><td>'+tableTot.visitSuccess+'</td><td><span class="tag tag-green">'+tableTot.dealCount+'</span></td><td>'+(tableTot.war*100).toFixed(1)+'%</td><td>'+(tableTot.vdr*100).toFixed(1)+'%</td><td>&yen;'+tableTot.dc+'</td>');
+        // Chart always shows all months
+        const monAll=getM();
+        new Chart(document.getElementById('tc'),{type:'line',data:{labels:monAll.map(m=>fm(m.month)),datasets:[
+            {label:'投放消耗(元)',data:monAll.map(m=>m.adSpend),borderColor:'#4361ee',backgroundColor:'rgba(67,97,238,.08)',fill:true,tension:.35,pointRadius:4,pointHoverRadius:6},
+            {label:'成交台数',data:monAll.map(m=>m.dealCount),borderColor:'#06d6a0',backgroundColor:'rgba(6,214,160,.08)',fill:true,tension:.35,yAxisID:'y1',pointRadius:4,pointHoverRadius:6}]},
+            options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}}});
+        const cl=['#4361ee','#4895ef','#4cc9f0','#90e0ef','#06d6a0'],fd=[{n:'私信转化',v:tot.privateMsg,w:100},{n:'加微数量',v:tot.wechatAdd,w:85},{n:'推单数量',v:tot.pushOrder,w:70},{n:'成功上门',v:tot.visitSuccess,w:55},{n:'成交台数',v:tot.dealCount,w:40}];
+        document.getElementById('fc').innerHTML=fd.map((s,i)=>{const pv=i>0?fd[i-1].v:s.v;const rt=pv>0?((s.v/pv)*100).toFixed(1)+'%':'100%';
+            return '<div class="funnel-step" style="background:'+cl[i]+';width:'+s.w+'%;max-width:420px"><span class="fn">'+s.n+'</span><span class="fv">'+s.v+'</span>'+(i>0?'<span class="fr">转化 '+rt+'</span>':'')+'</div>'+(i<fd.length-1?'<div class="funnel-arrow">&#x25BC;</div>':'');}).join('');
+    }
+    window._rDash=doRender;
+    c.innerHTML='<div class="page-hd"><h1>数据总览</h1><p>查看投放数据的核心指标和趋势</p>'+
+    '<div class="filter-bar"><label>选择月份：</label><select id="dashMonth" onchange="D.dashMonth=this.value;_rDash()"><option value="">全部</option>'+ms.map(m=>'<option value="'+m+'" '+(m===D.dashMonth?'selected':'')+'>'+fm(m)+'</option>').join('')+'</select></div></div>'+
+    '<div class="kpi-grid" id="dashKpi"></div>'+
     '<div class="chart-grid"><div class="card"><div class="card-hd"><div class="card-title">月度投放消耗与成交趋势</div></div><div class="chart-container"><canvas id="tc"></canvas></div></div>'+
-    '<div class="card"><div class="card-hd"><div class="card-title">转化漏斗（累计数据）</div></div><div class="funnel-wrap" id="fc"></div></div></div>'+
-    '<div class="card"><div class="card-hd"><div><div class="card-title">月度汇总对比</div><div class="card-sub">所有月份的核心指标</div></div></div><div class="table-wrap"><table>'+
-    '<thead><tr><th>月份</th><th>投放消耗</th><th>私信转化</th><th>加微数量</th><th>推单数量</th><th>成功上门</th><th>成交台数</th><th>微信添加率</th><th>上门成交率</th><th>成交成本</th></tr></thead><tbody>'+
-    mon.map(m=>'<tr><td><strong>'+fm(m.month)+'</strong></td><td>&yen;'+m.adSpend.toLocaleString()+'</td><td>'+m.privateMsg+'</td><td>'+m.wechatAdd+'</td><td>'+m.pushOrder+'</td><td>'+m.visitSuccess+'</td><td><span class="tag tag-green">'+m.dealCount+'</span></td><td>'+(m.war*100).toFixed(1)+'%</td><td>'+(m.vdr*100).toFixed(1)+'%</td><td>&yen;'+m.dc+'</td></tr>').join('')+
-    tRow('<td>总计</td><td>&yen;'+tot.adSpend.toLocaleString()+'</td><td>'+tot.privateMsg+'</td><td>'+tot.wechatAdd+'</td><td>'+tot.pushOrder+'</td><td>'+tot.visitSuccess+'</td><td><span class="tag tag-green">'+tot.dealCount+'</span></td><td>'+(tot.war*100).toFixed(1)+'%</td><td>'+(tot.vdr*100).toFixed(1)+'%</td><td>&yen;'+tot.dc+'</td>')+
-    '</tbody></table></div></div>';
-    new Chart(document.getElementById('tc'),{type:'line',data:{labels:mon.map(m=>fm(m.month)),datasets:[
-        {label:'投放消耗(元)',data:mon.map(m=>m.adSpend),borderColor:'#4361ee',backgroundColor:'rgba(67,97,238,.08)',fill:true,tension:.35,pointRadius:4,pointHoverRadius:6},
-        {label:'成交台数',data:mon.map(m=>m.dealCount),borderColor:'#06d6a0',backgroundColor:'rgba(6,214,160,.08)',fill:true,tension:.35,yAxisID:'y1',pointRadius:4,pointHoverRadius:6}]},
-        options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true},y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false}}}}});
-    const cl=['#4361ee','#4895ef','#4cc9f0','#90e0ef','#06d6a0'],fd=[{n:'私信转化',v:tot.privateMsg,w:100},{n:'加微数量',v:tot.wechatAdd,w:85},{n:'推单数量',v:tot.pushOrder,w:70},{n:'成功上门',v:tot.visitSuccess,w:55},{n:'成交台数',v:tot.dealCount,w:40}];
-    document.getElementById('fc').innerHTML=fd.map((s,i)=>{const pv=i>0?fd[i-1].v:s.v;const rt=pv>0?((s.v/pv)*100).toFixed(1)+'%':'100%';
-        return '<div class="funnel-step" style="background:'+cl[i]+';width:'+s.w+'%;max-width:420px"><span class="fn">'+s.n+'</span><span class="fv">'+s.v+'</span>'+(i>0?'<span class="fr">转化 '+rt+'</span>':'')+'</div>'+(i<fd.length-1?'<div class="funnel-arrow">&#x25BC;</div>':'');}).join('');
+    '<div class="card"><div class="card-hd"><div class="card-title">转化漏斗</div></div><div class="funnel-wrap" id="fc"></div></div></div>'+
+    '<div class="card"><div class="card-hd"><div><div class="card-title">月度汇总对比</div><div class="card-sub" id="dashSub">所有月份的核心指标</div></div></div><div class="table-wrap"><table>'+
+    '<thead><tr><th>月份</th><th>投放消耗</th><th>私信转化</th><th>加微数量</th><th>推单数量</th><th>成功上门</th><th>成交台数</th><th>微信添加率</th><th>上门成交率</th><th>成交成本</th></tr></thead><tbody id="dashTbody"></tbody></table></div></div>';
+    doRender();
 }
 function kpi(color,label,value,pct,name,inv){
     const up=inv?pct<=0:pct>=0,d=up?'up':'down',arr=up?'&#x2191;':'&#x2193;';
