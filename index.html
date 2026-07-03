@@ -293,20 +293,20 @@ let D={cur:null,role:null,uid:null,records:[],users:[
     {id:'u3',account:'sm1',password:'123456',name:'王上门',role:'shangmen'},
     {id:'u4',account:'sm2',password:'123456',name:'赵上门',role:'shangmen'},
 ],kfStaff:['张客服','李客服'],smStaff:['王上门','赵上门']};
-function fm(m){if(!m)return'';const p=m.split('-');return p[0]+'年'+parseInt(p[1])+'月';}
+let _lsOK=true;function lsGet(k){try{return localStorage.getItem(k);}catch(e){_lsOK=false;return null;}}function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){_lsOK=false;}}function lsRemove(k){try{localStorage.removeItem(k);}catch(e){_lsOK=false;}}function fm(m){if(!m)return'';const p=m.split('-');return p[0]+'年'+parseInt(p[1])+'月';}
 function init(){
-    const V='v7';if(localStorage.getItem('adv')!==V){localStorage.removeItem('adr');localStorage.removeItem('adu');localStorage.removeItem('adk');localStorage.removeItem('adm');localStorage.setItem('adv',V);}
+    const V='v7';if(lsGet("adv")!==V){lsRemove("adr");lsRemove("adu");lsRemove("adk");lsRemove("adm");lsSet("adv",V);}
     if(typeof supabase!=='undefined'&&SB_URL!=='YOUR_SUPABASE_URL'){sb=supabase.createClient(SB_URL,SB_KEY);}
-    const s=localStorage.getItem('adr');
+    const s=lsGet("adr");
     if(s)D.records=JSON.parse(s);
     else{D.records=HISTORICAL_DATA.map((d,i)=>({id:'h_'+i,date:d.date,month:d.month,adSpend:d.adSpend,privateMsg:d.privateMsg,wechatAdd:d.wechatAdd,pushOrder:d.pushOrder,visitSuccess:d.visitSuccess,dealCount:d.dealCount,kefuUser:'历史导入',kefuInputTime:d.date+' 00:00:00',shangmenUser:'历史导入',shangmenInputTime:d.date+' 00:00:00'}));save();}
-    const su=localStorage.getItem('adu');if(su)D.users=JSON.parse(su);
-    const sk=localStorage.getItem('adk');if(sk)D.kfStaff=JSON.parse(sk);
-    const sm=localStorage.getItem('adm');if(sm)D.smStaff=JSON.parse(sm);
+    const su=lsGet("adu");if(su)D.users=JSON.parse(su);
+    const sk=lsGet("adk");if(sk)D.kfStaff=JSON.parse(sk);
+    const sm=lsGet("adm");if(sm)D.smStaff=JSON.parse(sm);
     if(sb)syncFromSB().then(()=>{if(D.cur)go('dashboard',document.querySelector('.nav-item.active'));});
 }
-function save(){localStorage.setItem('adr',JSON.stringify(D.records));localStorage.setItem('adu',JSON.stringify(D.users));localStorage.setItem('adk',JSON.stringify(D.kfStaff));localStorage.setItem('adm',JSON.stringify(D.smStaff));if(sb)syncToSB();}
-async function syncFromSB(){try{const{data,error}=await sb.from('records').select('*').order('date',{ascending:false});if(error){console.log('SB records not ready yet',error.code);return;}if(data&&data.length>0){D.records=data;localStorage.setItem('adr',JSON.stringify(D.records));}const{data:u,error:eu}=await sb.from('settings').select('*').eq('key','users').single();if(!eu&&u)D.users=JSON.parse(u.value);const{data:k,error:ek}=await sb.from('settings').select('*').eq('key','kfStaff').single();if(!ek&&k)D.kfStaff=JSON.parse(k.value);const{data:m,error:em}=await sb.from('settings').select('*').eq('key','smStaff').single();if(!em&&m)D.smStaff=JSON.parse(m.value);}catch(e){console.log('SB sync error',e);}}
+function save(){lsSet("adr",JSON.stringify(D.records));lsSet("adu",JSON.stringify(D.users));lsSet("adk",JSON.stringify(D.kfStaff));lsSet("adm",JSON.stringify(D.smStaff));if(sb)syncToSB();}
+async function syncFromSB(){try{const{data,error}=await sb.from('records').select('*').order('date',{ascending:false});if(error){console.log('SB records not ready yet',error.code);return;}if(data&&data.length>0){D.records=data;lsSet("adr",JSON.stringify(D.records));}const{data:u,error:eu}=await sb.from('settings').select('*').eq('key','users').single();if(!eu&&u)D.users=JSON.parse(u.value);const{data:k,error:ek}=await sb.from('settings').select('*').eq('key','kfStaff').single();if(!ek&&k)D.kfStaff=JSON.parse(k.value);const{data:m,error:em}=await sb.from('settings').select('*').eq('key','smStaff').single();if(!em&&m)D.smStaff=JSON.parse(m.value);}catch(e){console.log('SB sync error',e);}}
 async function syncToSB(){try{const{error:er}=await sb.from('records').upsert(D.records,{onConflict:'id'});if(er&&er.code!=='42P01')console.log('SB save records error',er.code);const{error:eu}=await sb.from('settings').upsert({key:'users',value:JSON.stringify(D.users)},{onConflict:'key'});if(eu&&eu.code!=='42P01')console.log('SB save users error',eu.code);const{error:ek}=await sb.from('settings').upsert({key:'kfStaff',value:JSON.stringify(D.kfStaff)},{onConflict:'key'});if(ek&&ek.code!=='42P01')console.log('SB save kf error',ek.code);const{error:em}=await sb.from('settings').upsert({key:'smStaff',value:JSON.stringify(D.smStaff)},{onConflict:'key'});if(em&&em.code!=='42P01')console.log('SB save sm error',em.code);}catch(e){console.log('SB save error',e);}}
 function doLogin(){
     const a=document.getElementById('loginAccount').value.trim(),p=document.getElementById('loginPassword').value;
@@ -534,5 +534,4 @@ function toast(msg,type){type=type||'s';const t=document.createElement('div');t.
 init();
 </script>
 </body>
-</html><!-- deployed Fri Jul  3 14:58:26 CST 2026 -->
-<!-- deployed Fri Jul  3 14:58:33 CST 2026 -->
+</html>
