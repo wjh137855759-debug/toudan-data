@@ -103,7 +103,7 @@ input,select,button,table{font-family:inherit}
 .card-sub{font-size:12px;color:var(--text3);margin-top:3px}
 
 /* ===== KPI GRID ===== */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:16px;margin-bottom:28px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:28px}
 .kpi-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;position:relative;overflow:hidden;transition:var(--transition)}
 .kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
@@ -111,7 +111,7 @@ input,select,button,table{font-family:inherit}
 .kpi-card.orange::after{background:var(--warning)}.kpi-card.red::after{background:var(--danger)}
 .kpi-card.cyan::after{background:var(--info)}
 .kpi-label{font-size:12.5px;color:var(--text2);margin-bottom:10px;font-weight:500}
-.kpi-value{font-size:26px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.02em}
+.kpi-value{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.02em;overflow-wrap:anywhere}
 .kpi-change{font-size:11.5px;color:var(--text3);display:flex;align-items:center;gap:3px}
 .kpi-change.up{color:var(--success)}.kpi-change.down{color:var(--danger)}
 
@@ -184,7 +184,7 @@ tr:hover td{background:var(--card-hover)}
   .app-layout{flex-direction:column}
   .kpi-grid{grid-template-columns:1fr 1fr;gap:10px}
   .kpi-card{padding:14px 10px}
-  .kpi-value{font-size:20px}
+  .kpi-value{font-size:18px}
   .kpi-label{font-size:11px}
   .chart-grid{grid-template-columns:1fr;gap:14px}
   .form-grid{grid-template-columns:1fr}
@@ -523,7 +523,7 @@ function rPerson(c){
         const t=agg(rs),days=rs.length;
         const color=type==='kf'?'blue':type==='acct'?'cyan':'orange';
         return '<div class="card" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 style="font-size:16px"><span class="tag tag-'+color+'">'+name+'</span> <span style="font-size:12px;color:var(--text3);font-weight:400">'+days+'天记录</span></h3></div>'+
-        '<div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">'+
+        '<div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">'+
         (type==='sm'?'<div class="kpi-card blue"><div class="kpi-label">成功上门</div><div class="kpi-value">'+t.visitSuccess+'单</div></div><div class="kpi-card green"><div class="kpi-label">成交台数</div><div class="kpi-value">'+t.dealCount+'台</div></div><div class="kpi-card orange"><div class="kpi-label">成交率</div><div class="kpi-value">'+(t.vdr*100).toFixed(1)+'%</div></div><div class="kpi-card cyan"><div class="kpi-label">日均上门</div><div class="kpi-value">'+(days>0?(t.visitSuccess/days).toFixed(1):0)+'</div></div>':
         '<div class="kpi-card blue"><div class="kpi-label">投放消耗</div><div class="kpi-value">&yen;'+t.adSpend.toLocaleString()+'</div></div><div class="kpi-card green"><div class="kpi-label">私信转化</div><div class="kpi-value">'+t.privateMsg+'人</div></div><div class="kpi-card orange"><div class="kpi-label">加微数量</div><div class="kpi-value">'+t.wechatAdd+'人</div></div><div class="kpi-card cyan"><div class="kpi-label">推单数量</div><div class="kpi-value">'+t.pushOrder+'单</div></div><div class="kpi-card red"><div class="kpi-label">添加率</div><div class="kpi-value">'+(t.war*100).toFixed(1)+'%</div></div><div class="kpi-card blue"><div class="kpi-label">私信成本</div><div class="kpi-value">&yen;'+t.pmc+'</div></div>')+
         '</div></div>';
