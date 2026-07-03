@@ -116,7 +116,7 @@ input,select,button,table{font-family:inherit}
 .kpi-change.up{color:var(--success)}.kpi-change.down{color:var(--danger)}
 
 /* ===== TABLES ===== */
-.table-wrap{overflow-x:auto;overflow-y:auto;max-height:800px;border-radius:var(--radius-sm)}
+.table-wrap{overflow-x:auto;border-radius:var(--radius-sm)}
 table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.4}
 th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border-light);white-space:nowrap}
 th{background:#f9fafb;font-weight:600;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;position:sticky;top:0;z-index:1}
@@ -196,7 +196,7 @@ tr:hover td{background:var(--card-hover)}
   .filter-bar{flex-direction:column;align-items:stretch;gap:8px}
   .filter-bar label{font-size:13px}
   .filter-bar select,.filter-bar input{width:100%;padding:12px;font-size:15px}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:70vh}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .table-wrap table{min-width:900px}
   th,td{padding:6px 10px;font-size:11px}
   .login-box{padding:28px 20px;width:92vw}
@@ -295,8 +295,9 @@ let D={cur:null,role:null,uid:null,records:[],users:[
     {id:'u4',account:'sm2',password:'123456',name:'赵上门',role:'shangmen'},
 ],kfStaff:['张客服','李客服'],smStaff:['王上门','赵上门']};
 let _lsOK=true;function lsGet(k){try{return localStorage.getItem(k);}catch(e){_lsOK=false;return null;}}function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){_lsOK=false;}}function lsRemove(k){try{localStorage.removeItem(k);}catch(e){_lsOK=false;}}function fm(m){if(!m)return'';const p=m.split('-');return p[0]+'年'+parseInt(p[1])+'月';}
+function today(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 function init(){
-    const V='v7';if(lsGet("adv")!==V){lsRemove("adr");lsRemove("adu");lsRemove("adk");lsRemove("adm");lsSet("adv",V);}
+    const V='v7';if(lsGet("adv")!==V){lsRemove("adr");lsRemove("adu");lsRemove("adk");lsRemove("adm");lsRemove("ad_login");lsSet("adv",V);}
     if(typeof supabase!=='undefined'&&SB_URL!=='YOUR_SUPABASE_URL'){sb=supabase.createClient(SB_URL,SB_KEY);}
     const s=lsGet("adr");
     if(s)D.records=JSON.parse(s);
@@ -304,6 +305,7 @@ function init(){
     const su=lsGet("adu");if(su)D.users=JSON.parse(su);
     const sk=lsGet("adk");if(sk)D.kfStaff=JSON.parse(sk);
     const sm=lsGet("adm");if(sm)D.smStaff=JSON.parse(sm);
+    const login=lsGet("ad_login");if(login){try{const L=JSON.parse(login);D.cur=L.name;D.role=L.role;D.uid=L.uid;document.getElementById('loginScreen').classList.add('hidden');document.getElementById('appLayout').classList.remove('hidden');const rn={admin:'管理员',kefu:'客服人员',shangmen:'上门人员'},rc={admin:'role-admin',kefu:'role-kefu',shangmen:'role-shangmen'};document.getElementById('sidebarRoleBadge').textContent=rn[L.role];document.getElementById('sidebarRoleBadge').className='role-badge '+rc[L.role];document.getElementById('userAvatar').textContent=L.name[0];document.getElementById('sidebarUserName').textContent=L.name;document.getElementById('sidebarUserRole').textContent=rn[L.role];['navAdmin','navKefu','navShangmen'].forEach(id=>document.getElementById(id).classList.add('hidden'));const mobPerson=document.getElementById('mobPerson');const mobAdmin=document.getElementById('mobAdmin');const mobEntry=document.querySelector('.mobile-nav-item[data-page="kefuInput"]');let firstNav=null;if(L.role==='admin'){document.getElementById('navAdmin').classList.remove('hidden');mobPerson.style.display='';mobAdmin.style.display='';if(mobEntry){mobEntry.setAttribute('onclick',"go('kefuInput',this)");mobEntry.setAttribute('data-page','kefuInput');}firstNav=document.querySelector('#navAdmin .nav-item');go('dashboard',firstNav);}else if(L.role==='kefu'){document.getElementById('navKefu').classList.remove('hidden');mobPerson.style.display='none';mobAdmin.style.display='none';if(mobEntry){mobEntry.setAttribute('onclick',"go('kefuInput',this)");mobEntry.setAttribute('data-page','kefuInput');}firstNav=document.querySelector('#navKefu .nav-item');go('kefuInput',firstNav);}else{document.getElementById('navShangmen').classList.remove('hidden');mobPerson.style.display='none';mobAdmin.style.display='none';if(mobEntry){mobEntry.setAttribute('onclick',"go('smInput',this)");mobEntry.setAttribute('data-page','smInput');}firstNav=document.querySelector('#navShangmen .nav-item');go('smInput',firstNav);}}catch(e){console.log('login restore failed',e);}}
     if(sb)syncFromSB().then(()=>{if(D.cur)go('dashboard',document.querySelector('.nav-item.active'));});
 }
 function save(){lsSet("adr",JSON.stringify(D.records));lsSet("adu",JSON.stringify(D.users));lsSet("adk",JSON.stringify(D.kfStaff));lsSet("adm",JSON.stringify(D.smStaff));if(sb)syncToSB();}
@@ -315,6 +317,7 @@ function doLogin(){
     const u=D.users.find(x=>x.account===a&&x.password===p);
     if(!u){toast('账号或密码错误','e');return;}
     D.cur=u.name;D.role=u.role;D.uid=u.id;
+    lsSet('ad_login',JSON.stringify({name:u.name,role:u.role,uid:u.id}));
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appLayout').classList.remove('hidden');
     const rn={admin:'管理员',kefu:'客服人员',shangmen:'上门人员'},rc={admin:'role-admin',kefu:'role-kefu',shangmen:'role-shangmen'};
@@ -324,28 +327,31 @@ function doLogin(){
     document.getElementById('sidebarUserName').textContent=u.name;
     document.getElementById('sidebarUserRole').textContent=rn[u.role];
     ['navAdmin','navKefu','navShangmen'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-    // Mobile nav setup
     const mobPerson=document.getElementById('mobPerson');
     const mobAdmin=document.getElementById('mobAdmin');
     const mobEntry=document.querySelector('.mobile-nav-item[data-page="kefuInput"]');
+    let firstNav=null;
     if(u.role==='admin'){
         document.getElementById('navAdmin').classList.remove('hidden');
         mobPerson.style.display='';mobAdmin.style.display='';
-        if(mobEntry)mobEntry.setAttribute('onclick',"go('kefuInput',this)");
-        go('dashboard');
+        if(mobEntry){mobEntry.setAttribute('onclick',"go('kefuInput',this)");mobEntry.setAttribute('data-page','kefuInput');}
+        firstNav=document.querySelector('#navAdmin .nav-item');
+        go('dashboard',firstNav);
     }else if(u.role==='kefu'){
         document.getElementById('navKefu').classList.remove('hidden');
         mobPerson.style.display='none';mobAdmin.style.display='none';
-        if(mobEntry)mobEntry.setAttribute('onclick',"go('kefuInput',this)");
-        go('kefuInput');
+        if(mobEntry){mobEntry.setAttribute('onclick',"go('kefuInput',this)");mobEntry.setAttribute('data-page','kefuInput');}
+        firstNav=document.querySelector('#navKefu .nav-item');
+        go('kefuInput',firstNav);
     }else{
         document.getElementById('navShangmen').classList.remove('hidden');
         mobPerson.style.display='none';mobAdmin.style.display='none';
-        if(mobEntry)mobEntry.setAttribute('onclick',"go('smInput',this)");
-        go('smInput');
+        if(mobEntry){mobEntry.setAttribute('onclick',"go('smInput',this)");mobEntry.setAttribute('data-page','smInput');}
+        firstNav=document.querySelector('#navShangmen .nav-item');
+        go('smInput',firstNav);
     }
 }
-function logout(){D.cur=D.role=D.uid=null;document.getElementById('appLayout').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('loginAccount').value='';}
+function logout(){D.cur=D.role=D.uid=null;lsRemove('ad_login');document.getElementById('appLayout').classList.add('hidden');document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('loginAccount').value='';}
 function go(p,el){
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     document.querySelectorAll('.mobile-nav-item').forEach(n=>n.classList.remove('active'));
@@ -374,7 +380,7 @@ function getM(){const g={};D.records.forEach(r=>{if(!g[r.month])g[r.month]=[];g[
 function tRow(cells){return '<tr class="total-row">'+cells+'</tr>';}
 
 /* ===== DELETE ===== */
-function delRec(id){showM('确认删除','<p>确定要删除这条记录吗？此操作不可撤回。</p>',()=>{D.records=D.records.filter(r=>r.id!==id);save();closeM();toast('记录已删除');go('dailyData');},closeM);}
+function delRec(id){showM('确认删除','<p>确定要删除这条记录吗？此操作不可撤回。</p>',()=>{D.records=D.records.filter(r=>r.id!==id);save();closeM();toast('记录已删除');if(D.role==='kefu')go('kefuHistory');else if(D.role==='shangmen')go('smHistory');else go('dailyData');},closeM);}
 function showM(title,body,onOk,onCancel){
     document.getElementById('modalContainer').innerHTML='<div class="modal-bg" onclick="closeM()"><div class="modal" onclick="event.stopPropagation()"><div class="modal-hd"><h3>'+title+'</h3><button class="close-btn" onclick="closeM()">&times;</button></div><div class="modal-bd">'+body+'</div><div class="modal-ft"><button class="btn btn-ghost" onclick="closeM()">取消</button><button class="btn btn-danger" id="mOk">确定删除</button></div></div></div>';
     document.getElementById('mOk').onclick=onOk;}
@@ -423,7 +429,7 @@ function rDash(c){
         document.getElementById('dashTbody').innerHTML=tableMon.map(m=>'<tr><td><strong>'+fm(m.month)+'</strong></td><td>&yen;'+m.adSpend.toLocaleString()+'</td><td>'+m.privateMsg+'</td><td>'+m.wechatAdd+'</td><td>'+m.pushOrder+'</td><td>'+m.visitSuccess+'</td><td><span class="tag tag-green">'+m.dealCount+'</span></td><td>'+(m.war*100).toFixed(1)+'%</td><td>'+(m.vdr*100).toFixed(1)+'%</td><td>&yen;'+m.dc+'</td></tr>').join('')+
         tRow('<td>'+tableTotLabel+'</td><td>&yen;'+tableTot.adSpend.toLocaleString()+'</td><td>'+tableTot.privateMsg+'</td><td>'+tableTot.wechatAdd+'</td><td>'+tableTot.pushOrder+'</td><td>'+tableTot.visitSuccess+'</td><td><span class="tag tag-green">'+tableTot.dealCount+'</span></td><td>'+(tableTot.war*100).toFixed(1)+'%</td><td>'+(tableTot.vdr*100).toFixed(1)+'%</td><td>&yen;'+tableTot.dc+'</td>');
         // Chart always shows all months
-        const monAll=getM();
+        const monAll=getM();if(window._tcChart)window._tcChart.destroy();window._tcChart=
         new Chart(document.getElementById('tc'),{type:'line',data:{labels:monAll.map(m=>fm(m.month)),datasets:[
             {label:'投放消耗(元)',data:monAll.map(m=>m.adSpend),borderColor:'#4361ee',backgroundColor:'rgba(67,97,238,.08)',fill:true,tension:.35,pointRadius:4,pointHoverRadius:6},
             {label:'成交台数',data:monAll.map(m=>m.dealCount),borderColor:'#06d6a0',backgroundColor:'rgba(6,214,160,.08)',fill:true,tension:.35,yAxisID:'y1',pointRadius:4,pointHoverRadius:6}]},
@@ -472,25 +478,25 @@ function rMonthly(c){
     mon.map(m=>{const d=D.records.filter(r=>r.month===m.month).length;return '<tr><td><strong>'+fm(m.month)+'</strong></td><td>'+d+'天</td><td>&yen;'+m.adSpend.toLocaleString()+'</td><td>&yen;'+(m.adSpend/d).toFixed(0)+'</td><td>'+m.privateMsg+'</td><td>'+m.wechatAdd+'</td><td>'+m.pushOrder+'</td><td>'+m.visitSuccess+'</td><td><span class="tag tag-green">'+m.dealCount+'</span></td><td>'+(m.dealCount/d).toFixed(1)+'</td><td>'+(m.war*100).toFixed(1)+'%</td><td>'+(m.por*100).toFixed(1)+'%</td><td>'+(m.vdr*100).toFixed(1)+'%</td><td>&yen;'+m.pmc+'</td><td>&yen;'+m.wac+'</td><td>&yen;'+m.poc+'</td><td>&yen;'+m.dc+'</td></tr>';}).join('')+
     tRow('<td>总计</td><td>'+td+'天</td><td>&yen;'+mt.adSpend.toLocaleString()+'</td><td>&yen;'+(mt.adSpend/td).toFixed(0)+'</td><td>'+mt.privateMsg+'</td><td>'+mt.wechatAdd+'</td><td>'+mt.pushOrder+'</td><td>'+mt.visitSuccess+'</td><td><span class="tag tag-green">'+mt.dealCount+'</span></td><td>'+(mt.dealCount/td).toFixed(1)+'</td><td>'+(mt.war*100).toFixed(1)+'%</td><td>'+(mt.por*100).toFixed(1)+'%</td><td>'+(mt.vdr*100).toFixed(1)+'%</td><td>&yen;'+mt.pmc+'</td><td>&yen;'+mt.wac+'</td><td>&yen;'+mt.poc+'</td><td>&yen;'+mt.dc+'</td>')+
     '</tbody></table></div></div>';
-    const lb=mon.map(m=>fm(m.month));
+    const lb=mon.map(m=>fm(m.month));if(window._mscChart)window._mscChart.destroy();window._mscChart=
     new Chart(document.getElementById('msc'),{type:'bar',data:{labels:lb,datasets:[{label:'投放消耗',data:mon.map(m=>m.adSpend),backgroundColor:'#4361ee',borderRadius:6,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
-    new Chart(document.getElementById('mdc'),{type:'bar',data:{labels:lb,datasets:[{label:'成交台数',data:mon.map(m=>m.dealCount),backgroundColor:'#06d6a0',borderRadius:6,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
-    new Chart(document.getElementById('mcc'),{type:'line',data:{labels:lb,datasets:[{label:'成交成本',data:mon.map(m=>m.dc),borderColor:'#ffd166',backgroundColor:'rgba(255,209,102,.1)',fill:true,tension:.35,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false}});
-    new Chart(document.getElementById('mrc'),{type:'line',data:{labels:lb,datasets:[{label:'微信添加率%',data:mon.map(m=>(m.war*100).toFixed(1)),borderColor:'#4361ee',tension:.35,pointRadius:4},{label:'上门成交率%',data:mon.map(m=>(m.vdr*100).toFixed(1)),borderColor:'#06d6a0',tension:.35,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false}});
+    if(window._mdcChart)window._mdcChart.destroy();window._mdcChart=new Chart(document.getElementById('mdc'),{type:'bar',data:{labels:lb,datasets:[{label:'成交台数',data:mon.map(m=>m.dealCount),backgroundColor:'#06d6a0',borderRadius:6,barPercentage:.6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+    if(window._mccChart)window._mccChart.destroy();window._mccChart=new Chart(document.getElementById('mcc'),{type:'line',data:{labels:lb,datasets:[{label:'成交成本',data:mon.map(m=>m.dc),borderColor:'#ffd166',backgroundColor:'rgba(255,209,102,.1)',fill:true,tension:.35,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false}});
+    if(window._mrcChart)window._mrcChart.destroy();window._mrcChart=new Chart(document.getElementById('mrc'),{type:'line',data:{labels:lb,datasets:[{label:'微信添加率%',data:mon.map(m=>(m.war*100).toFixed(1)),borderColor:'#4361ee',tension:.35,pointRadius:4},{label:'上门成交率%',data:mon.map(m=>(m.vdr*100).toFixed(1)),borderColor:'#06d6a0',tension:.35,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false}});
 }
 
 /* ===== ANALYTICS ===== */
 function rAnalytics(c){
-    const mon=getM(),lt=mon[mon.length-1];
+    const mon=getM();if(!mon.length){c.innerHTML='<div class="page-hd"><h1>多维分析</h1><p>暂无数据，请先录入数据</p></div>';return;}const lt=mon[mon.length-1];
     c.innerHTML='<div class="page-hd"><h1>多维分析</h1><p>转化漏斗对比、成本结构和效率雷达</p></div>'+
     '<div class="chart-grid"><div class="card"><div class="card-hd"><div class="card-title">各月转化漏斗对比</div></div><div class="chart-container"><canvas id="afc"></canvas></div></div>'+
     '<div class="card"><div class="card-hd"><div class="card-title">成本结构分布（'+fm(lt.month)+'）</div></div><div class="chart-container"><canvas id="acpc"></canvas></div></div></div>'+
     '<div class="card"><div class="card-hd"><div class="card-title">效率雷达图（'+fm(lt.month)+'）</div></div><div class="chart-container" style="max-width:480px;margin:0 auto"><canvas id="arc"></canvas></div></div>';
-    const lb=mon.map(m=>fm(m.month));
+    const lb=mon.map(m=>fm(m.month));if(window._afcChart)window._afcChart.destroy();window._afcChart=
     new Chart(document.getElementById('afc'),{type:'bar',data:{labels:lb,datasets:[{label:'私信',data:mon.map(m=>m.privateMsg),backgroundColor:'#4361ee'},{label:'加微',data:mon.map(m=>m.wechatAdd),backgroundColor:'#4895ef'},{label:'推单',data:mon.map(m=>m.pushOrder),backgroundColor:'#4cc9f0'},{label:'上门',data:mon.map(m=>m.visitSuccess),backgroundColor:'#90e0ef'},{label:'成交',data:mon.map(m=>m.dealCount),backgroundColor:'#06d6a0'}]},options:{responsive:true,maintainAspectRatio:false}});
-    new Chart(document.getElementById('acpc'),{type:'doughnut',data:{labels:['私信成本','加微成本','推单成本','成交成本'],datasets:[{data:[lt.pmc,lt.wac,lt.poc,lt.dc],backgroundColor:['#4361ee','#4895ef','#4cc9f0','#06d6a0'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%'}});
+    if(window._acpcChart)window._acpcChart.destroy();window._acpcChart=new Chart(document.getElementById('acpc'),{type:'doughnut',data:{labels:['私信成本','加微成本','推单成本','成交成本'],datasets:[{data:[lt.pmc,lt.wac,lt.poc,lt.dc],backgroundColor:['#4361ee','#4895ef','#4cc9f0','#06d6a0'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%'}});
     const rd=[(lt.war*100).toFixed(1),(lt.por*100).toFixed(1),(lt.vdr*100).toFixed(1),Math.min(100,(10000/lt.dc)).toFixed(1),Math.min(100,lt.privateMsg/10).toFixed(1),Math.min(100,lt.dealCount*5).toFixed(1)];
-    new Chart(document.getElementById('arc'),{type:'radar',data:{labels:['微信添加率','订单推出率','上门成交率','成本效率','私信量','成交量'],datasets:[{label:fm(lt.month),data:rd,backgroundColor:'rgba(67,97,238,.15)',borderColor:'#4361ee',pointBackgroundColor:'#4361ee',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:true,max:100,ticks:{font:{size:10}}}}}});
+    if(window._arcChart)window._arcChart.destroy();window._arcChart=new Chart(document.getElementById('arc'),{type:'radar',data:{labels:['微信添加率','订单推出率','上门成交率','成本效率','私信量','成交量'],datasets:[{label:fm(lt.month),data:rd,backgroundColor:'rgba(67,97,238,.15)',borderColor:'#4361ee',pointBackgroundColor:'#4361ee',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:true,max:100,ticks:{font:{size:10}}}}}});
 }
 
 /* ===== PERSON ANALYSIS ===== */
@@ -536,7 +542,7 @@ function rUsers(c){
 function showAddU(){document.getElementById('modalContainer').innerHTML='<div class="modal-bg" onclick="closeM()"><div class="modal" onclick="event.stopPropagation()"><div class="modal-hd"><h3>添加账号</h3><button class="close-btn" onclick="closeM()">&times;</button></div><div class="modal-bd"><div class="fg"><label>姓名</label><input id="nu_n"></div><div class="fg"><label>登录账号</label><input id="nu_a"></div><div class="fg"><label>登录密码</label><input id="nu_p"></div><div class="fg"><label>角色</label><select id="nu_r"><option value="kefu">客服人员</option><option value="shangmen">上门人员</option></select></div></div><div class="modal-ft"><button class="btn btn-ghost" onclick="closeM()">取消</button><button class="btn btn-primary" onclick="saveNU()">保存</button></div></div></div>';}
 function saveNU(){const n=document.getElementById('nu_n').value.trim(),a=document.getElementById('nu_a').value.trim(),p=document.getElementById('nu_p').value.trim(),r=document.getElementById('nu_r').value;if(!n||!a||!p){toast('请填写完整','e');return;}if(D.users.find(u=>u.account===a)){toast('账号已存在','e');return;}D.users.push({id:'u_'+Date.now(),account:a,password:p,name:n,role:r});save();closeM();toast('账号添加成功');rUsers(document.getElementById('mainContent'));}
 function editU(id){const u=D.users.find(x=>x.id===id);if(!u)return;document.getElementById('modalContainer').innerHTML='<div class="modal-bg" onclick="closeM()"><div class="modal" onclick="event.stopPropagation()"><div class="modal-hd"><h3>编辑账号</h3><button class="close-btn" onclick="closeM()">&times;</button></div><div class="modal-bd"><div class="fg"><label>姓名</label><input id="eu_n" value="'+u.name+'"></div><div class="fg"><label>登录账号</label><input id="eu_a" value="'+u.account+'"></div><div class="fg"><label>登录密码</label><input id="eu_p" value="'+u.password+'"></div><div class="fg"><label>角色</label><select id="eu_r"><option value="admin"'+(u.role==='admin'?' selected':'')+'>管理员</option><option value="kefu"'+(u.role==='kefu'?' selected':'')+'>客服人员</option><option value="shangmen"'+(u.role==='shangmen'?' selected':'')+'>上门人员</option></select></div></div><div class="modal-ft"><button class="btn btn-ghost" onclick="closeM()">取消</button><button class="btn btn-primary" onclick="saveEU(\''+id+'\')">保存</button></div></div></div>';}
-function saveEU(id){const u=D.users.find(x=>x.id===id);if(!u)return;u.name=document.getElementById('eu_n').value.trim();u.account=document.getElementById('eu_a').value.trim();u.password=document.getElementById('eu_p').value.trim();u.role=document.getElementById('eu_r').value;if(!u.name||!u.account||!u.password){toast('请填写完整','e');return;}save();closeM();toast('账号已更新');rUsers(document.getElementById('mainContent'));}
+function saveEU(id){const u=D.users.find(x=>x.id===id);if(!u)return;const n=document.getElementById('eu_n').value.trim(),a=document.getElementById('eu_a').value.trim(),p=document.getElementById('eu_p').value.trim(),r=document.getElementById('eu_r').value;if(!n||!a||!p){toast('请填写完整','e');return;}if(D.users.find(x=>x.account===a&&x.id!==id)){toast('账号已存在','e');return;}u.name=n;u.account=a;u.password=p;u.role=r;save();closeM();toast('账号已更新');rUsers(document.getElementById('mainContent'));}
 function delU(id){showM('确认删除','<p>确定要删除此账号吗？</p>',()=>{D.users=D.users.filter(u=>u.id!==id);save();closeM();toast('账号已删除');rUsers(document.getElementById('mainContent'));},closeM);}
 function showAddKF(){const n=prompt('请输入客服姓名：');if(n&&n.trim()){D.kfStaff.push(n.trim());save();go('users',document.querySelector('.nav-item.active'));toast('客服已添加');}}
 function delKF(i){if(confirm('确定删除该客服人员吗？')){D.kfStaff.splice(i,1);save();go('users',document.querySelector('.nav-item.active'));toast('客服已删除');}}
@@ -544,7 +550,7 @@ function showAddSM(){const n=prompt('请输入上门人员姓名：');if(n&&n.tr
 function delSM(i){if(confirm('确定删除该上门人员吗？')){D.smStaff.splice(i,1);save();go('users',document.querySelector('.nav-item.active'));toast('上门人员已删除');}}
 
 /* ===== KEFU INPUT ===== */
-function rKI(c){const opts=D.kfStaff.map(n=>'<option value="'+n+'"'+(n===D.cur?' selected':'')+'>'+n+'</option>').join('');c.innerHTML='<div class="page-hd"><h1>录入客服数据</h1><p>请填写当天的投放和客服转化数据</p></div><div class="card" style="max-width:680px"><div class="form-section"><div class="form-section-title">&#x1F4C5; 基本信息</div><div class="form-grid"><div class="fg"><label>日期</label><input type="date" id="kD" value="'+new Date().toISOString().split('T')[0]+'"></div><div class="fg"><label>负责客服</label><select id="kU">'+opts+'</select></div></div></div><div class="form-section"><div class="form-section-title">&#x1F4CA; 投放数据</div><div class="form-grid"><div class="fg"><label>投放消耗（元）</label><div class="input-group"><input type="number" id="kA" placeholder="0.00" step="0.01"><span class="suffix">元</span></div></div><div class="fg"><label>私信转化（人）</label><input type="number" id="kP" placeholder="0"></div><div class="fg"><label>加微数量（人）</label><input type="number" id="kW" placeholder="0"></div><div class="fg"><label>推单数量（单）</label><input type="number" id="kO" placeholder="0"></div></div></div><div style="display:flex;gap:12px;margin-top:4px"><button class="btn btn-primary" onclick="subK()">&#x1F4BE; 保存数据</button><button class="btn btn-ghost" onclick="document.getElementById(\'kA\').value=\'\';document.getElementById(\'kP\').value=\'\';document.getElementById(\'kW\').value=\'\';document.getElementById(\'kO\').value=\'\'">重置</button></div></div>';}
+function rKI(c){const opts=D.kfStaff.map(n=>'<option value="'+n+'"'+(n===D.cur?' selected':'')+'>'+n+'</option>').join('');c.innerHTML='<div class="page-hd"><h1>录入客服数据</h1><p>请填写当天的投放和客服转化数据</p></div><div class="card" style="max-width:680px"><div class="form-section"><div class="form-section-title">&#x1F4C5; 基本信息</div><div class="form-grid"><div class="fg"><label>日期</label><input type="date" id="kD" value="'+today()+'"></div><div class="fg"><label>负责客服</label><select id="kU">'+opts+'</select></div></div></div><div class="form-section"><div class="form-section-title">&#x1F4CA; 投放数据</div><div class="form-grid"><div class="fg"><label>投放消耗（元）</label><div class="input-group"><input type="number" id="kA" placeholder="0.00" step="0.01"><span class="suffix">元</span></div></div><div class="fg"><label>私信转化（人）</label><input type="number" id="kP" placeholder="0"></div><div class="fg"><label>加微数量（人）</label><input type="number" id="kW" placeholder="0"></div><div class="fg"><label>推单数量（单）</label><input type="number" id="kO" placeholder="0"></div></div></div><div style="display:flex;gap:12px;margin-top:4px"><button class="btn btn-primary" onclick="subK()">&#x1F4BE; 保存数据</button><button class="btn btn-ghost" onclick="document.getElementById(\'kA\').value=\'\';document.getElementById(\'kP\').value=\'\';document.getElementById(\'kW\').value=\'\';document.getElementById(\'kO\').value=\'\'">重置</button></div></div>';}
 function subK(){const d=document.getElementById('kD').value,u=document.getElementById('kU').value,a=+document.getElementById('kA').value||0,p=+document.getElementById('kP').value||0,w=+document.getElementById('kW').value||0,o=+document.getElementById('kO').value||0;if(!d){toast('请选择日期','e');return;}const ex=D.records.find(r=>r.date===d);if(ex){ex.adSpend=a;ex.privateMsg=p;ex.wechatAdd=w;ex.pushOrder=o;ex.kefuUser=u;ex.kefuInputTime=new Date().toLocaleString('zh-CN');}else D.records.push({id:'r_'+Date.now(),date:d,month:d.substring(0,7),adSpend:a,privateMsg:p,wechatAdd:w,pushOrder:o,visitSuccess:0,dealCount:0,kefuUser:u,kefuInputTime:new Date().toLocaleString('zh-CN'),shangmenUser:'',shangmenInputTime:''});save();toast('数据保存成功');}
 
 /* ===== KEFU HISTORY ===== */
@@ -554,7 +560,7 @@ function rKH(c){const rs=D.records.filter(r=>r.kefuUser===D.cur).map(calc).sort(
 function rKS(c){const rs=D.records.filter(r=>r.kefuUser===D.cur),tot=agg(rs),bm={};rs.forEach(r=>{if(!bm[r.month])bm[r.month]=[];bm[r.month].push(r);});const md=Object.keys(bm).sort().map(m=>({...agg(bm[m]),month:m}));c.innerHTML='<div class="page-hd"><h1>我的数据统计</h1><p>您个人数据的统计汇总</p></div><div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)"><div class="kpi-card blue"><div class="kpi-label">总投放消耗</div><div class="kpi-value">&yen;'+tot.adSpend.toLocaleString()+'</div></div><div class="kpi-card green"><div class="kpi-label">总私信转化</div><div class="kpi-value">'+tot.privateMsg+'人</div></div><div class="kpi-card orange"><div class="kpi-label">总加微数量</div><div class="kpi-value">'+tot.wechatAdd+'人</div></div><div class="kpi-card cyan"><div class="kpi-label">平均添加率</div><div class="kpi-value">'+(tot.war*100).toFixed(1)+'%</div></div></div><div class="card"><div class="card-hd"><div class="card-title">我的月度数据</div></div><div class="table-wrap"><table><thead><tr><th>月份</th><th>投放消耗</th><th>私信转化</th><th>加微数量</th><th>推单数量</th><th>添加率</th></tr></thead><tbody>'+md.map(m=>'<tr><td><strong>'+fm(m.month)+'</strong></td><td>&yen;'+m.adSpend.toLocaleString()+'</td><td>'+m.privateMsg+'</td><td>'+m.wechatAdd+'</td><td>'+m.pushOrder+'</td><td>'+(m.war*100).toFixed(1)+'%</td></tr>').join('')+tRow('<td>总计</td><td>&yen;'+tot.adSpend.toLocaleString()+'</td><td>'+tot.privateMsg+'</td><td>'+tot.wechatAdd+'</td><td>'+tot.pushOrder+'</td><td>'+(tot.war*100).toFixed(1)+'%</td>')+'</tbody></table></div></div>';}
 
 /* ===== SM INPUT ===== */
-function rSI(c){const opts=D.smStaff.map(n=>'<option value="'+n+'"'+(n===D.cur?' selected':'')+'>'+n+'</option>').join('');c.innerHTML='<div class="page-hd"><h1>录入上门数据</h1><p>请填写当天的上门和成交数据</p></div><div class="card" style="max-width:680px"><div class="form-section"><div class="form-section-title">&#x1F4C5; 基本信息</div><div class="form-grid"><div class="fg"><label>日期</label><input type="date" id="sD" value="'+new Date().toISOString().split('T')[0]+'"></div><div class="fg"><label>负责上门</label><select id="sU">'+opts+'</select></div></div></div><div class="form-section"><div class="form-section-title">&#x1F6AA; 上门数据</div><div class="form-grid"><div class="fg"><label>成功上门（单）</label><input type="number" id="sV" placeholder="0"></div><div class="fg"><label>成交台数（台）</label><input type="number" id="sDl" placeholder="0"></div></div></div><div style="display:flex;gap:12px;margin-top:4px"><button class="btn btn-success" onclick="subS()">&#x1F4BE; 保存数据</button><button class="btn btn-ghost" onclick="document.getElementById(\'sV\').value=\'\';document.getElementById(\'sDl\').value=\'\'">重置</button></div></div>';}
+function rSI(c){const opts=D.smStaff.map(n=>'<option value="'+n+'"'+(n===D.cur?' selected':'')+'>'+n+'</option>').join('');c.innerHTML='<div class="page-hd"><h1>录入上门数据</h1><p>请填写当天的上门和成交数据</p></div><div class="card" style="max-width:680px"><div class="form-section"><div class="form-section-title">&#x1F4C5; 基本信息</div><div class="form-grid"><div class="fg"><label>日期</label><input type="date" id="sD" value="'+today()+'"></div><div class="fg"><label>负责上门</label><select id="sU">'+opts+'</select></div></div></div><div class="form-section"><div class="form-section-title">&#x1F6AA; 上门数据</div><div class="form-grid"><div class="fg"><label>成功上门（单）</label><input type="number" id="sV" placeholder="0"></div><div class="fg"><label>成交台数（台）</label><input type="number" id="sDl" placeholder="0"></div></div></div><div style="display:flex;gap:12px;margin-top:4px"><button class="btn btn-success" onclick="subS()">&#x1F4BE; 保存数据</button><button class="btn btn-ghost" onclick="document.getElementById(\'sV\').value=\'\';document.getElementById(\'sDl\').value=\'\'">重置</button></div></div>';}
 function subS(){const d=document.getElementById('sD').value,u=document.getElementById('sU').value,v=+document.getElementById('sV').value||0,dl=+document.getElementById('sDl').value||0;if(!d){toast('请选择日期','e');return;}const ex=D.records.find(r=>r.date===d);if(ex){ex.visitSuccess=v;ex.dealCount=dl;ex.shangmenUser=u;ex.shangmenInputTime=new Date().toLocaleString('zh-CN');}else D.records.push({id:'r_'+Date.now(),date:d,month:d.substring(0,7),adSpend:0,privateMsg:0,wechatAdd:0,pushOrder:0,visitSuccess:v,dealCount:dl,kefuUser:'',kefuInputTime:'',shangmenUser:u,shangmenInputTime:new Date().toLocaleString('zh-CN')});save();toast('数据保存成功');}
 
 /* ===== SM HISTORY ===== */
